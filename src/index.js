@@ -1,26 +1,15 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./Routes/routes');
+const db = require('./config/dbConnect.js');
 require('dotenv').config();
 
-const {
-  DB_USER,
-  DB_PASS,
-  DB_NAME,
-  DB_HOST,
-  PORT,
-} = process.env;
+const { PORT } = process.env;
 
-const url = `mongodb://${DB_USER}:${DB_PASS}@${DB_HOST}/${DB_NAME}`;
-
-mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
-  .then(() => {
-    console.log('MongoDB is connected');
-  })
-  .catch((err) => {
-    console.log('Error on connecting to MongoDB', err);
-  });
+db.on("error", console.log.bind(console, 'Error on connecting to MongoDB'));
+db.once("open", () => {
+  console.log('MongoDB is connected');
+})
 
 const app = express();
 app.use(cors());
