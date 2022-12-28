@@ -426,7 +426,6 @@ const demandsSectorsStatistic = async (req, res) => {
 
   try {
     const statistics = await Demand.aggregate(aggregatorOpts).exec();
-    console.log(statistics);
     return res.json(statistics);
   } catch (err) {
     return res.status(400).json({ err: 'failed to generate statistics' });
@@ -435,7 +434,6 @@ const demandsSectorsStatistic = async (req, res) => {
 
 const demandCreate = async (req, res) => {
   try {
-    console.log(req.body);
     const {
       name,
       description,
@@ -499,7 +497,6 @@ const demandCreate = async (req, res) => {
 
     // await notifyDemandCreated(clientID, newDemand, token);
     // await scheduleDemandComingAlert(clientID, newDemand, token);
-  console.log(newDemand);
     return res.json(newDemand);
   } catch (err) {
     console.log(err);
