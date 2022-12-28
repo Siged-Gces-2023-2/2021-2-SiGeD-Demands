@@ -27,6 +27,10 @@ const DemandSchema = new mongoose.Schema({
       type: String,
       require: true,
     },
+    responsibleUserName: {
+      type: String,
+      require: false,
+    },
     createdAt: {
       type: Date,
       require: true,

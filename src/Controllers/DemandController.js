@@ -435,12 +435,14 @@ const demandsSectorsStatistic = async (req, res) => {
 
 const demandCreate = async (req, res) => {
   try {
+    console.log(req.body);
     const {
       name,
       description,
       process,
       categoryID,
       sectorID,
+      responsibleUserName,
       clientID,
       userID,
       demandDate,
@@ -464,9 +466,8 @@ const demandCreate = async (req, res) => {
     if (user.error) {
       return res.status(400).json({ message: user.error });
     }
-    const date = moment
-      .utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'))
-      .toDate();
+    const date = moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss')).toDate();
+
     const retroactiveDate = moment(demandDate).toDate();
     retroactiveDate.setHours(
       date.getHours(),
@@ -483,6 +484,7 @@ const demandCreate = async (req, res) => {
         sectorID,
         createdAt: date,
         updatedAt: date,
+        responsibleUserName,
       },
       clientID,
       userID,
@@ -497,7 +499,7 @@ const demandCreate = async (req, res) => {
 
     // await notifyDemandCreated(clientID, newDemand, token);
     // await scheduleDemandComingAlert(clientID, newDemand, token);
-
+  console.log(newDemand);
     return res.json(newDemand);
   } catch (err) {
     console.log(err);
@@ -600,6 +602,7 @@ const demandId = async (req, res) => {
   const { id } = req.params;
   try {
     const demand = await Demand.findOne({ _id: id }).populate('categoryID');
+    console.log(demand);
     return res.status(200).json(demand);
   } catch {
     return res.status(400).json({ err: 'Invalid ID' });
@@ -646,7 +649,7 @@ const updateSectorDemand = async (req, res) => {
 const forwardDemand = async (req, res) => {
   const { id } = req.params;
 
-  const { sectorID } = req.body;
+  const { sectorID, responsibleUserName } = req.body;
 
   const validField = validation.validateSectorID(sectorID);
 
@@ -665,6 +668,7 @@ const forwardDemand = async (req, res) => {
       updatedAt: moment
         .utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'))
         .toDate(),
+      responsibleUserName,
     });
 
     const updateStatus = await Demand.findOneAndUpdate(
