@@ -599,7 +599,6 @@ const demandId = async (req, res) => {
   const { id } = req.params;
   try {
     const demand = await Demand.findOne({ _id: id }).populate('categoryID');
-    console.log(demand);
     return res.status(200).json(demand);
   } catch {
     return res.status(400).json({ err: 'Invalid ID' });
