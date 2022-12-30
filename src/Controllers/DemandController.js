@@ -9,6 +9,7 @@ const { getClients } = require('../Services/Axios/clientService');
 const { getUser } = require('../Services/Axios/userService');
 const { verifyChanges } = require('../Utils/verifyChanges');
 const File = require('../Models/FileSchema');
+const {clearQueryParams} = require("../Utils/clear");
 
 /* const {
   notifyDemandCreated,
@@ -18,7 +19,9 @@ const File = require('../Models/FileSchema');
 const demandGetWithClientsNames = async (req, res) => {
   try {
     const token = req.headers['x-access-token'];
-    const { open } = req.query;
+
+    clearQueryParams(req.query);
+
     const demandsWithClients = [];
     let demands;
     const clients = await getClients(token);
@@ -26,19 +29,8 @@ const demandGetWithClientsNames = async (req, res) => {
     if (clients.error) {
       return res.status(400).json({ err: clients.error });
     }
-    
-    if (open === 'false') {
-      demands = await Demand.find({ open }).populate('categoryID');
-    } else if (open === 'null') {
-      demands = await Demand.find({
-        $or: [
-          { open: false },
-          { open: true },
-        ],
-      }).populate('categoryID');
-    } else {
-      demands = await Demand.find({ open: true }).populate('categoryID');
-    }
+
+    demands = await Demand.find(req.query).populate('categoryID').sort({ 'createdAt': -1, 'sectorHistory.createdAt': 1 });
 
     clients.map((client) => {
       demands.map((demand) => {
