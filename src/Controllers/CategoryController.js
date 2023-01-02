@@ -3,7 +3,7 @@ const Category = require('../Models/CategorySchema');
 const validation = require('../Utils/validate');
 
 const categoryGet = async (req, res) => {
-  const categories = await Category.find();
+  const categories = await Category.find().sort({ 'name': 1 });
 
   return res.json(categories);
 };
