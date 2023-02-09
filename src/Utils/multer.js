@@ -2,6 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
 
+const MAX_SIZE_5_MEGABYTES = 5 * 1024 * 1024;
+
 module.exports = {
   storage: multer.diskStorage({
 
@@ -20,8 +22,7 @@ module.exports = {
     },
   }),
   limits: {
-    // 5 MB max size
-    fileSize: 5 * 1024 * 1024,
+    fileSize: MAX_SIZE_5_MEGABYTES,
   },
   fileFilter: (req, file, cb) => {
     const allowedFormat = [
