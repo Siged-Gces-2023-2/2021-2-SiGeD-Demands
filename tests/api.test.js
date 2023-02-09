@@ -12,7 +12,6 @@ describe('Sample Test', () => {
 
   // Categories test comes first.
 
-  // Categories values:
   const category = {
     name: 'Nome da Categoria',
     description: 'Descrição da Demanda',
@@ -25,7 +24,6 @@ describe('Sample Test', () => {
     color: '#ff0000'
   };
 
-  // token declaration:
   const token = jwt.sign({
     name: "Teste",
     description: "Teste",
