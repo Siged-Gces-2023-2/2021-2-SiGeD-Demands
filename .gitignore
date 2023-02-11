@@ -108,3 +108,4 @@ yarn.lock
 scripts/.env
 
 .DS_Store
+/files/uploads/
