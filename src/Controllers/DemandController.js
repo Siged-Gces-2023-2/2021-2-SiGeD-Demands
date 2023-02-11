@@ -32,8 +32,6 @@ const demandGetWithClientsNames = async (req, res) => {
 
     demands = await Demand.find(req.query).populate('categoryID').sort({ 'createdAt': -1, 'sectorHistory.createdAt': 1 });
 
-    console.log(demands);
-
     clients.map((client) => {
       demands.map((demand) => {
         if (client._id === demand.clientID) {
