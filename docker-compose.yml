@@ -6,13 +6,13 @@ services:
     build: .
     ports:
       - 3003:3003
-    environment: 
+    environment:
       PORT: 3003
     env_file: .env
     volumes:
       - ./:/code
       - node_modules:/code/node_modules
-    networks: 
+    networks:
       - backend_demands
       - siged_backend
     depends_on:
@@ -31,14 +31,14 @@ services:
       - ./db/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
       - ./db/.dbshell:/home/mongodb/.dbshell
       - mongodb:/data/db
-    networks: 
+    networks:
       - backend_demands
 
-volumes: 
+volumes:
   node_modules:
   mongodb:
 
-networks: 
+networks:
   backend_demands:
   siged_backend:
     external: true

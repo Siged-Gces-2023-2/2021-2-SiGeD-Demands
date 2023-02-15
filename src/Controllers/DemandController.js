@@ -877,15 +877,17 @@ const getFile = async (req, res) => {
 
 const uploadFile = async (req, res) => {
   try {
+
     const { id } = req.params;
     const {
       userName,
       userSector,
-      userId,
+      userID,
       description,
       important,
       visibility,
     } = req.body;
+
     const name = req.file.originalname;
     const { size } = req.file;
     const path = req.file.filename;
@@ -899,7 +901,7 @@ const uploadFile = async (req, res) => {
     });
 
     const validFields = validation.validateDemandUpdate(
-      userName, description, visibility, userSector, userId, important,
+      userName, description, visibility, userSector, userID, important,
     );
 
     if (validFields.length) {
@@ -911,7 +913,7 @@ const uploadFile = async (req, res) => {
     demandFound.updateList = demandFound.updateList.push({
       userName,
       userSector,
-      userId,
+      userID,
       fileID: newFile._id,
       description,
       visibility,
