@@ -903,6 +903,11 @@ const uploadFile = async (req, res) => {
     const validFields = validation.validateDemandUpdate(
       userName, description, visibility, userSector, userID, important,
     );
+    
+    const MAX_SIZE_5_MEGABYTES = 5 * 1024 * 1024;
+    if (size >= MAX_SIZE_5_MEGABYTES) {
+      return res.status(400).json({ err: "File bigger then 5MB." })
+    }
 
     if (validFields.length) {
       return res.status(400).json({ status: validFields });
