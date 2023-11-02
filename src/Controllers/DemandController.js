@@ -328,8 +328,20 @@ const demandsSectorsStatistic = async (req, res) => {
 
   const aggregatorOpts = [
     {
+      $unwind: '$sectorHistory',
+    },
+    {
+      $match: {
+        createdAt: {
+          $gte: new Date(initialDate),
+          $lte: new Date(completeFinalDate),
+        },
+        open: isActive,
+      },
+    },
+    {
       $group: {
-        _id: { $last: '$sectorHistory.sectorID' },
+        _id: '$sectorHistory.sectorID',
         total: { $sum: 1 },
       },
     },
