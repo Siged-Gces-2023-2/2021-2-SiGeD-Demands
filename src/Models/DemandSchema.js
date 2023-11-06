@@ -110,6 +110,11 @@ const DemandSchema = new mongoose.Schema({
       require: true,
       default: false,
     },
+    treatment: {
+      type: Boolean,
+      require: true,
+      default: false,
+    },
     createdAt: {
       type: Date,
       require: true,

@@ -695,6 +695,7 @@ const createDemandUpdate = async (req, res) => {
     description,
     visibilityRestriction,
     important,
+    treatment,
   } = req.body;
 
   const validFields = validation.validateDemandUpdate(
@@ -704,6 +705,7 @@ const createDemandUpdate = async (req, res) => {
     userSector,
     userID,
     important,
+    treatment,
   );
 
   if (validFields.length) {
@@ -720,6 +722,7 @@ const createDemandUpdate = async (req, res) => {
       description,
       visibilityRestriction,
       important,
+      treatment,
       createdAt: moment
         .utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'))
         .toDate(),
@@ -752,6 +755,7 @@ const updateDemandUpdate = async (req, res) => {
     visibilityRestriction,
     updateListID,
     important,
+    treatment,
   } = req.body;
 
   const validFields = validation.validateDemandUpdate(
@@ -761,6 +765,7 @@ const updateDemandUpdate = async (req, res) => {
     userSector,
     userID,
     important,
+    treatment,
   );
 
   if (validFields.length) {
@@ -778,6 +783,7 @@ const updateDemandUpdate = async (req, res) => {
           'updateList.$.description': description,
           'updateList.$.visibilityRestriction': visibilityRestriction,
           'updateList.$.important': important,
+          'updateList.$.treatment': treatment,
           'updateList.$.updatedAt': moment
             .utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss'))
             .toDate(),
