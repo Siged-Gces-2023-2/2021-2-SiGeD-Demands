@@ -20,6 +20,7 @@ const DemandsRoutes = (routes) => {
   routes.get('/statistic/category', verifyJWT, DemandController.demandsCategoriesStatistic);
   routes.get('/statistic/sector', verifyJWT, DemandController.demandsSectorsStatistic);
   routes.get('/statistic/client', verifyJWT, DemandController.demandsClientsStatistic);
+  routes.get('/statistic/feature', verifyJWT, DemandController.demandsFeaturesStatistic);
   routes.post('/demand/upload-file/:id', verifyJWT, multer(multerConfig).single('file'), DemandController.uploadFile);
   routes.get('/demand/file/:idFile', verifyJWT, DemandController.getFile);
   routes.get('/demand/byclient/:clientID/:open', verifyJWT, DemandController.demandByClient);

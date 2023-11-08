@@ -4,12 +4,14 @@ const fs = require('fs');
 const pathR = require('path');
 const Demand = require('../Models/DemandSchema');
 const Category = require('../Models/CategorySchema');
+const Feature = require('../Models/FeatureSchema');
 const validation = require('../Utils/validate');
 const { getClients } = require('../Services/Axios/clientService');
 const { getUser } = require('../Services/Axios/userService');
 const { verifyChanges } = require('../Utils/verifyChanges');
 const File = require('../Models/FileSchema');
 const {clearQueryParams} = require('../Utils/clear');
+const { features } = require('process');
 
 /* const {
   notifyDemandCreated,
@@ -51,6 +53,7 @@ const demandGetWithClientsNames = async (req, res) => {
             updateList: demand.updateList,
           };
           demandsWithClients.push(demandWithClient);
+          console.log(demandsWithClients);
           return true;
         }
         return false;
@@ -75,6 +78,133 @@ const demandGet = async (req, res) => {
   }
   const demands = await Demand.find().populate('categoryID');
   return res.json(demands);
+};
+
+const demandsFeaturesStatistic = async (req, res) => {
+  const {
+    isDemandActive, idSector, idFeature, initialDate, finalDate, idClients,
+  } = req.query;
+  let isActive;
+  if (isDemandActive === 'true') {
+    isActive = true;
+  } else if (isDemandActive === 'false') {
+    isActive = false;
+  } else {
+    isActive = { $exists: true };
+  }
+  const completeFinalDate = `${finalDate}T24:00:00`;
+  
+  const token = req.headers['x-access-token'];
+
+  const clients = await getClients(token);
+
+  if (clients.error) {
+    return res.status(400).json({ err: clients.error });
+  }
+
+  const clientIDsWithFeatures = clients.filter((client) => client.features.length > 0);
+  const clientIDs = clientIDsWithFeatures.map((client) => client._id);
+
+  const aggregatorOpts = [
+    {
+      $match: {
+        clientID: { $in: clientIDs },
+      },
+    },
+    {
+      $group: {
+        _id: '$clientID',
+        demandas: { $sum: 1 },
+      },
+    },
+  ];
+  
+  try {
+    if (idSector && idSector !== 'null' && idSector !== 'undefined') {
+      if (idFeature && idFeature !== 'null' && idFeature !== 'undefined') {
+        const featureId = mongoose.Types.ObjectId(idFeature);
+        console.log(featureId);
+        aggregatorOpts.unshift({
+          $match: {
+            open: isActive,
+            sectorID: idSector,
+            createdAt: {
+              $gte: new Date(initialDate),
+              $lte: new Date(completeFinalDate),
+            },
+          },
+        });
+      } else {
+        aggregatorOpts.unshift({
+          $match: {
+            open: isActive,
+            sectorID: idSector,
+            createdAt: {
+              $gte: new Date(initialDate),
+              $lte: new Date(completeFinalDate),
+            },
+          },
+        });
+      }
+      aggregatorOpts.unshift({
+        $addFields: {
+          sectorID: { $arrayElemAt: ['$sectorHistory.sectorID', -1] },
+        },
+      });
+    } else if (
+      idFeature
+      && idFeature !== 'null'
+      && idFeature !== 'undefined'
+    ) {
+      const featureId = mongoose.Types.ObjectId(idFeature);
+      console.log(featureId);
+      aggregatorOpts.unshift({
+        $match: {
+          open: isActive,
+          createdAt: {
+            $gte: new Date(initialDate),
+            $lte: new Date(completeFinalDate),
+          },
+        },
+      });
+    } else {
+      aggregatorOpts.unshift({
+        $match: {
+          open: isActive,
+          createdAt: {
+            $gte: new Date(initialDate),
+            $lte: new Date(completeFinalDate),
+          },
+        },
+      });
+    }
+  } catch (err) {
+    console.error(err);
+  }
+
+  if (idClients && idClients !== 'null' && idClients !== 'undefined') {
+    try {
+      const clientID = String(idClients);
+      aggregatorOpts.unshift({
+        $match: {
+          open: isActive,
+          clientID,
+          createdAt: {
+            $gte: new Date(initialDate),
+            $lte: new Date(completeFinalDate),
+          },
+        },
+      });
+    } catch (err) {
+      console.error(err.message);
+    }
+  }
+  try {
+    const statistics = await Demand.aggregate(aggregatorOpts).exec();
+    return res.json(statistics);
+  } catch {
+    return res.status(400).json({ err: 'failed to generate statistics' });
+  }
 };
 
 const demandsClientsStatistic = async (req, res) => {
@@ -970,6 +1100,7 @@ module.exports = {
   demandsCategoriesStatistic,
   demandsSectorsStatistic,
   demandsClientsStatistic,
+  demandsFeaturesStatistic,
   history,
   newestFourDemandsGet,
   uploadFile,
