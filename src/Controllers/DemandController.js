@@ -4,14 +4,12 @@ const fs = require('fs');
 const pathR = require('path');
 const Demand = require('../Models/DemandSchema');
 const Category = require('../Models/CategorySchema');
-const Feature = require('../Models/FeatureSchema');
 const validation = require('../Utils/validate');
 const { getClients } = require('../Services/Axios/clientService');
 const { getUser } = require('../Services/Axios/userService');
 const { verifyChanges } = require('../Utils/verifyChanges');
 const File = require('../Models/FileSchema');
 const {clearQueryParams} = require('../Utils/clear');
-const { features } = require('process');
 
 /* const {
   notifyDemandCreated,
@@ -122,8 +120,6 @@ const demandsFeaturesStatistic = async (req, res) => {
   try {
     if (idSector && idSector !== 'null' && idSector !== 'undefined') {
       if (idFeature && idFeature !== 'null' && idFeature !== 'undefined') {
-        const featureId = mongoose.Types.ObjectId(idFeature);
-        console.log(featureId);
         aggregatorOpts.unshift({
           $match: {
             open: isActive,
@@ -156,8 +152,6 @@ const demandsFeaturesStatistic = async (req, res) => {
       && idFeature !== 'null'
       && idFeature !== 'undefined'
     ) {
-      const featureId = mongoose.Types.ObjectId(idFeature);
-      console.log(featureId);
       aggregatorOpts.unshift({
         $match: {
           open: isActive,
