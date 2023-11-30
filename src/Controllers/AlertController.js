@@ -93,15 +93,15 @@ const alertUpdate = async (req, res) => {
 
   try {
     const updateStatus = await Alert.findOneAndUpdate({ _id: id }, {
-        name,
-        description,
-        date,
-        alertClient,
-        checkbox,
-        demandID,
-        sectorID,
-        updatedAt: getCurrentUtcTimestamp(),
-      }, { new: true }, (user) => user);
+      name,
+      description,
+      date,
+      alertClient,
+      checkbox,
+      demandID,
+      sectorID,
+      updatedAt: getCurrentUtcTimestamp(),
+    }, { new: true }, (user) => user);
     return res.json(updateStatus);
   } catch {
     return res.status(400).json({ err: 'Invalid ID or alert not found.' });
