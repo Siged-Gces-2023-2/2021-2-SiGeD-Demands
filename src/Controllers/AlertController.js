@@ -2,53 +2,52 @@ const moment = require('moment-timezone');
 const Alert = require('../Models/AlertSchema');
 const validation = require('../Utils/validate');
 
-const alertGet = async (req, res) => {
-  const alerts = await Alert.find();
+const getCurrentUtcTimestamp = () => moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss')).toDate();
 
-  return res.json(alerts);
+const timeSevenDaysAfter = () => moment.utc(moment.tz('America/Sao_Paulo').add(7, 'days').format('YYYY-MM-DD')).toDate();
+
+const alertGet = async (req, res) => {
+  try {
+    const alerts = await Alert.find();
+
+    return res.json(alerts);
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch alerts.' });
+  }
+};
+
+const filterAlertsByDate = (alerts, dateNow, sevenDaysAfter) => {
+  return alerts.filter((alert) =>
+    (moment(alert.date).isSameOrBefore(sevenDaysAfter) && moment(alert.date).isSameOrAfter(dateNow)) ||
+    alert.checkbox === false
+  );
 };
 
 const alertGetByDemandId = async (req, res) => {
   const { demandID } = req.params;
-
-  const filteredAlerts = [];
-  const dateNow = moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DD')).toDate();
-  const sevenDaysAfter = moment.utc(moment.tz('America/Sao_Paulo').add(7, 'days').format('YYYY-MM-DD')).toDate();
+  const dateNow = getCurrentUtcTimestamp();
+  const sevenDaysAfter = timeSevenDaysAfter();
 
   try {
     const alerts = await Alert.find({ demandID });
-    alerts.forEach((alert) => {
-      if (moment(alert.date).isSameOrBefore(sevenDaysAfter)) {
-        if (moment(alert.date).isSameOrAfter(dateNow)) {
-          filteredAlerts.push(alert);
-        }
-      }
-    });
+    const filteredAlerts = filterAlertsByDate(alerts, dateNow, sevenDaysAfter);
     return res.status(200).json(filteredAlerts);
   } catch {
-    return res.status(400).json({ err: 'It was not possible to get alerts by demand ID' });
+    return res.status(400).json({ err: 'Failed to get alerts by demand ID' });
   }
 };
 
 const alertGetBySectorId = async (req, res) => {
   const { sectorID } = req.params;
-
-  const filteredAlerts = [];
-  const dateNow = moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DD')).toDate();
-  const sevenDaysAfter = moment.utc(moment.tz('America/Sao_Paulo').add(7, 'days').format('YYYY-MM-DD')).toDate();
+  const dateNow = getCurrentUtcTimestamp();
+  const sevenDaysAfter = timeSevenDaysAfter();
 
   try {
     const alerts = await Alert.find({ sectorID });
-    alerts.forEach((alert) => {
-      if (moment(alert.date).isSameOrBefore(sevenDaysAfter) || alert.checkbox === false) {
-        if (moment(alert.date).isSameOrAfter(dateNow) || alert.checkbox === false) {
-          filteredAlerts.push(alert);
-        }
-      }
-    });
+    const filteredAlerts = filterAlertsByDate(alerts, dateNow, sevenDaysAfter);
     return res.status(200).json(filteredAlerts);
   } catch {
-    return res.status(400).json({ err: 'It was not possible to get alerts by sector ID' });
+    return res.status(400).json({ err: 'Failed to get alerts by sector ID' });
   }
 };
 
@@ -71,12 +70,12 @@ const alertCreate = async (req, res) => {
       alertClient,
       demandID,
       sectorID,
-      createdAt: moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss')).toDate(),
-      updatedAt: moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss')).toDate(),
+      createdAt: getCurrentUtcTimestamp(),
+      updatedAt: getCurrentUtcTimestamp(),
     });
     return res.json(newAlert);
   } catch {
-    return res.status(400).json({ error: 'It was not possible to create the alert.' });
+    return res.status(400).json({ error: 'Failed to create the alert.' });
   }
 };
 
@@ -94,18 +93,18 @@ const alertUpdate = async (req, res) => {
 
   try {
     const updateStatus = await Alert.findOneAndUpdate({ _id: id }, {
-      name,
-      description,
-      date,
-      alertClient,
-      checkbox,
-      demandID,
-      sectorID,
-      updatedAt: moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss')).toDate(),
-    }, { new: true }, (user) => user);
+        name,
+        description,
+        date,
+        alertClient,
+        checkbox,
+        demandID,
+        sectorID,
+        updatedAt: getCurrentUtcTimestamp(),
+      }, { new: true }, (user) => user);
     return res.json(updateStatus);
   } catch {
-    return res.status(400).json({ err: 'invalid id' });
+    return res.status(400).json({ err: 'Invalid ID or alert not found.' });
   }
 };
 
@@ -114,10 +113,9 @@ const alertDelete = async (req, res) => {
 
   try {
     await Alert.deleteOne({ _id: id });
-
-    return res.json({ message: 'success' });
+    return res.json({ message: 'Alert deleted successfully.' });
   } catch (error) {
-    return res.status(400).json({ message: 'failure' });
+    return res.status(400).json({ message: 'Failed to delete alert.' });
   }
 };
 
