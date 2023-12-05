@@ -11,29 +11,25 @@ const { verifyChanges } = require('../Utils/verifyChanges');
 const File = require('../Models/FileSchema');
 const {clearQueryParams} = require('../Utils/clear');
 
-/* const {
-  notifyDemandCreated,
-  scheduleDemandComingAlert,
-} = require('../Utils/mailer'); */
-
-const demandGetWithClientsNames = async (req, res) => {
+const demandGetWithClientsNames = async (request, response) => {
   try {
-    const token = req.headers['x-access-token'];
+    const token = request.headers['x-access-token'];
 
-    clearQueryParams(req.query);
+    clearQueryParams(request.query);
 
     const demandsWithClients = [];
-    let demands;
     const clients = await getClients(token);
 
     if (clients.error) {
-      return res.status(400).json({ err: clients.error });
+      return response.status(400).json({ err: clients.error });
     }
 
-    demands = await Demand.find(req.query).populate('categoryID').sort({ 'createdAt': -1, 'sectorHistory.createdAt': 1 });
+    const demands = await Demand.find(request.query)
+      .populate('categoryID')
+      .sort({ 'createdAt': -1, 'sectorHistory.createdAt': 1 });
 
-    clients.map((client) => {
-      demands.map((demand) => {
+    clients.forEach((client) => {
+      demands.forEach((demand) => {
         if (client._id === demand.clientID) {
           const demandWithClient = {
             _id: demand._id,
@@ -58,30 +54,31 @@ const demandGetWithClientsNames = async (req, res) => {
       });
       return false;
     });
-    return res.json(demandsWithClients);
-  } catch {
-    return res.status(400).json({ err: 'Could not get demands' });
+
+    return response.json(demandsWithClients);
+  } catch (error) {
+    console.error(error);
+    return response.status(400).json({ err: 'Could not get demands' });
   }
 };
 
-const demandGet = async (req, res) => {
-  const { open } = req.query;
-  if (open === 'false') {
-    const demands = await Demand.find({ open }).populate('categoryID');
-    return res.json(demands);
+const demandGet = async (request, response) => {
+  try {
+    const { open } = request.query;
+    const query = open ? { open: open === 'true' } : {};
+
+    const demands = await Demand.find(query).populate('categoryID');
+    
+    return response.json(demands);
+  } catch (error) {
+    return response.status(400).json({ err: 'Could not get demands' });
   }
-  if (open === 'true') {
-    const demands = await Demand.find({ open: true }).populate('categoryID');
-    return res.json(demands);
-  }
-  const demands = await Demand.find().populate('categoryID');
-  return res.json(demands);
 };
 
-const demandsFeaturesStatistic = async (req, res) => {
+const demandsFeaturesStatistic = async (request, response) => {
   const {
     isDemandActive, idSector, idFeature, initialDate, finalDate, idClients,
-  } = req.query;
+  } = request.query;
   let isActive;
   if (isDemandActive === 'true') {
     isActive = true;
@@ -92,12 +89,12 @@ const demandsFeaturesStatistic = async (req, res) => {
   }
   const completeFinalDate = `${finalDate}T24:00:00`;
   
-  const token = req.headers['x-access-token'];
+  const token = request.headers['x-access-token'];
 
   const clients = await getClients(token);
 
   if (clients.error) {
-    return res.status(400).json({ err: clients.error });
+    return response.status(400).json({ err: clients.error });
   }
 
   const clientIDsWithFeatures = clients.filter((client) => client.features.length > 0);
@@ -195,16 +192,16 @@ const demandsFeaturesStatistic = async (req, res) => {
   }
   try {
     const statistics = await Demand.aggregate(aggregatorOpts).exec();
-    return res.json(statistics);
+    return response.json(statistics);
   } catch {
-    return res.status(400).json({ err: 'failed to generate statistics' });
+    return response.status(400).json({ err: 'failed to generate statistics' });
   }
 };
 
-const demandsClientsStatistic = async (req, res) => {
+const demandsClientsStatistic = async (request, response) => {
   const {
     isDemandActive, idSector, idCategory, initialDate, finalDate, idClients,
-  } = req.query;
+  } = request.query;
   let isActive;
   if (isDemandActive === 'true') {
     isActive = true;
@@ -306,16 +303,16 @@ const demandsClientsStatistic = async (req, res) => {
   }
   try {
     const statistics = await Demand.aggregate(aggregatorOpts).exec();
-    return res.json(statistics);
+    return response.json(statistics);
   } catch {
-    return res.status(400).json({ err: 'failed to generate statistics' });
+    return response.status(400).json({ err: 'failed to generate statistics' });
   }
 };
 
-const demandsCategoriesStatistic = async (req, res) => {
+const demandsCategoriesStatistic = async (request, response) => {
   const {
     isDemandActive, idSector, idCategory, initialDate, finalDate, idClients,
-  } = req.query;
+  } = request.query;
 
   let isActive;
   if (isDemandActive === 'true') {
@@ -429,16 +426,16 @@ const demandsCategoriesStatistic = async (req, res) => {
 
   try {
     const statistics = await Demand.aggregate(aggregatorOpts).exec();
-    return res.json(statistics);
+    return response.json(statistics);
   } catch {
-    return res.status(400).json({ err: 'failed to generate statistics' });
+    return response.status(400).json({ err: 'failed to generate statistics' });
   }
 };
 
-const demandsSectorsStatistic = async (req, res) => {
+const demandsSectorsStatistic = async (request, response) => {
   const {
     isDemandActive, idSector, idCategory, initialDate, finalDate, idClients,
-  } = req.query;
+  } = request.query;
 
   let isActive;
   if (isDemandActive === 'true') {
@@ -554,13 +551,13 @@ const demandsSectorsStatistic = async (req, res) => {
 
   try {
     const statistics = await Demand.aggregate(aggregatorOpts).exec();
-    return res.json(statistics);
+    return response.json(statistics);
   } catch (err) {
-    return res.status(400).json({ err: 'failed to generate statistics' });
+    return response.status(400).json({ err: 'failed to generate statistics' });
   }
 };
 
-const demandCreate = async (req, res) => {
+const demandCreate = async (request, response) => {
   try {
     const {
       name,
@@ -572,7 +569,7 @@ const demandCreate = async (req, res) => {
       clientID,
       userID,
       demandDate,
-    } = req.body;
+    } = request.body;
 
     const validFields = validation.validateDemand(
       name,
@@ -583,14 +580,14 @@ const demandCreate = async (req, res) => {
       userID,
     );
     if (validFields.length) {
-      return res.status(400).json({ status: validFields });
+      return response.status(400).json({ status: validFields });
     }
-    const token = req.headers['x-access-token'];
+    const token = request.headers['x-access-token'];
 
     const user = await getUser(userID, token);
 
     if (user.error) {
-      return res.status(400).json({ message: user.error });
+      return response.status(400).json({ message: user.error });
     }
     const date = moment.utc(moment.tz('America/Sao_Paulo').format('YYYY-MM-DDTHH:mm:ss')).toDate();
 
@@ -623,20 +620,18 @@ const demandCreate = async (req, res) => {
       updatedAt: date,
     });
 
-    // await notifyDemandCreated(clientID, newDemand, token);
-    // await scheduleDemandComingAlert(clientID, newDemand, token);
-    return res.json(newDemand);
+    return response.json(newDemand);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({ message: 'Failed to create demand' });
+    return response.status(500).json({ message: 'Failed to create demand' });
   }
 };
 
-const demandUpdate = async (req, res) => {
-  const { id } = req.params;
+const demandUpdate = async (request, response) => {
+  const { id } = request.params;
   const {
     name, description, process, categoryID, sectorID, clientID, userID,
-  } = req.body;
+  } = request.body;
 
   const validFields = validation.validateDemand(
     name,
@@ -648,19 +643,19 @@ const demandUpdate = async (req, res) => {
   );
 
   if (validFields.length) {
-    return res.status(400).json({ status: validFields });
+    return response.status(400).json({ status: validFields });
   }
 
   try {
-    const token = req.headers['x-access-token'];
+    const token = request.headers['x-access-token'];
 
     const user = await getUser(userID, token);
 
     if (user.error) {
-      return res.status(400).json({ message: user.error });
+      return response.status(400).json({ message: user.error });
     }
 
-    const demandHistory = await verifyChanges(req.body, id);
+    const demandHistory = await verifyChanges(request.body, id);
     const updateStatus = await Demand.findOneAndUpdate(
       { _id: id },
       {
@@ -679,14 +674,14 @@ const demandUpdate = async (req, res) => {
       { new: true },
       (err) => err,
     );
-    return res.json(updateStatus);
+    return response.json(updateStatus);
   } catch {
-    return res.status(400).json({ err: 'invalid id' });
+    return response.status(400).json({ err: 'invalid id' });
   }
 };
 
-const toggleDemand = async (req, res) => {
-  const { id } = req.params;
+const toggleDemand = async (request, response) => {
+  const { id } = request.params;
 
   try {
     const demandFound = await Demand.findOne({ _id: id });
@@ -706,42 +701,42 @@ const toggleDemand = async (req, res) => {
       { new: true },
       (demand) => demand,
     );
-    return res.json(updateStatus);
+    return response.json(updateStatus);
   } catch {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const demandByClient = async (req, res) => {
-  const { clientID, open } = req.params;
+const demandByClient = async (request, response) => {
+  const { clientID, open } = request.params;
 
   try {
     const demand = await Demand.find({ clientID: clientID, open: open }).populate('categoryID');
-    return res.status(200).json(demand);
+    return response.status(200).json(demand);
   } catch {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const demandId = async (req, res) => {
-  const { id } = req.params;
+const demandId = async (request, response) => {
+  const { id } = request.params;
   try {
     const demand = await Demand.findOne({ _id: id }).populate('categoryID');
-    return res.status(200).json(demand);
+    return response.status(200).json(demand);
   } catch {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const updateSectorDemand = async (req, res) => {
-  const { id } = req.params;
+const updateSectorDemand = async (request, response) => {
+  const { id } = request.params;
 
-  const { sectorID } = req.body;
+  const { sectorID } = request.body;
 
   const validFields = validation.validateSectorID(sectorID);
 
   if (validFields.length) {
-    return res.status(400).json({ status: validFields });
+    return response.status(400).json({ status: validFields });
   }
 
   try {
@@ -764,21 +759,21 @@ const updateSectorDemand = async (req, res) => {
       { new: true },
       (user) => user,
     );
-    return res.json(updateStatus);
+    return response.json(updateStatus);
   } catch {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const forwardDemand = async (req, res) => {
-  const { id } = req.params;
+const forwardDemand = async (request, response) => {
+  const { id } = request.params;
 
-  const { sectorID, responsibleUserName } = req.body;
+  const { sectorID, responsibleUserName } = request.body;
 
   const validField = validation.validateSectorID(sectorID);
 
   if (validField.length) {
-    return res.status(400).json({ status: validField });
+    return response.status(400).json({ status: validField });
   }
 
   try {
@@ -803,14 +798,14 @@ const forwardDemand = async (req, res) => {
       { new: true },
       (user) => user,
     );
-    return res.json(updateStatus);
+    return response.json(updateStatus);
   } catch (error) {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const createDemandUpdate = async (req, res) => {
-  const { id } = req.params;
+const createDemandUpdate = async (request, response) => {
+  const { id } = request.params;
 
   const {
     userName,
@@ -820,7 +815,7 @@ const createDemandUpdate = async (req, res) => {
     visibilityRestriction,
     important,
     treatment,
-  } = req.body;
+  } = request.body;
 
   const validFields = validation.validateDemandUpdate(
     userName,
@@ -833,7 +828,7 @@ const createDemandUpdate = async (req, res) => {
   );
 
   if (validFields.length) {
-    return res.status(400).json({ status: validFields });
+    return response.status(400).json({ status: validFields });
   }
 
   try {
@@ -864,13 +859,13 @@ const createDemandUpdate = async (req, res) => {
       (user) => user,
     );
 
-    return res.json(updateStatus);
+    return response.json(updateStatus);
   } catch {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const updateDemandUpdate = async (req, res) => {
+const updateDemandUpdate = async (request, response) => {
   const {
     userName,
     userSector,
@@ -880,7 +875,7 @@ const updateDemandUpdate = async (req, res) => {
     updateListID,
     important,
     treatment,
-  } = req.body;
+  } = request.body;
 
   const validFields = validation.validateDemandUpdate(
     userName,
@@ -893,7 +888,7 @@ const updateDemandUpdate = async (req, res) => {
   );
 
   if (validFields.length) {
-    return res.status(400).json({ status: validFields });
+    return response.status(400).json({ status: validFields });
   }
 
   try {
@@ -916,16 +911,16 @@ const updateDemandUpdate = async (req, res) => {
       { new: true },
       (user) => user,
     );
-    return res.json(final);
+    return response.json(final);
   } catch {
-    return res.status(400).json({ err: 'Invalid ID' });
+    return response.status(400).json({ err: 'Invalid ID' });
   }
 };
 
-const deleteDemandUpdate = async (req, res) => {
-  const { id } = req.params;
+const deleteDemandUpdate = async (request, response) => {
+  const { id } = request.params;
 
-  const { updateListID } = req.body;
+  const { updateListID } = request.body;
 
   try {
     const demand = await Demand.findOne({ _id: id });
@@ -951,18 +946,18 @@ const deleteDemandUpdate = async (req, res) => {
       { new: true },
       (user) => user,
     );
-    return res.json(updateStatus);
+    return response.json(updateStatus);
   } catch (error) {
-    return res.status(400).json({ err: 'failure' });
+    return response.status(400).json({ err: 'failure' });
   }
 };
 
-const history = async (req, res) => {
-  const { id } = req.params;
+const history = async (request, response) => {
+  const { id } = request.params;
 
   try {
     let error = '';
-    const token = req.headers['x-access-token'];
+    const token = request.headers['x-access-token'];
     const demandFound = await Demand.findOne({ _id: id });
     const userHistory = await Promise.all(
       demandFound.demandHistory.map(async (elem) => {
@@ -987,22 +982,22 @@ const history = async (req, res) => {
       }),
     );
     if (error) {
-      return res.status(400).json({ message: error });
+      return response.status(400).json({ message: error });
     }
-    return res.json(userHistory);
+    return response.json(userHistory);
   } catch {
-    return res.status(400).json({ message: 'Demand not found' });
+    return response.status(400).json({ message: 'Demand not found' });
   }
 };
 
-const newestFourDemandsGet = async (req, res) => {
+const newestFourDemandsGet = async (request, response) => {
   const demands = await Demand.find().limit(4).sort({ createdAt: -1 });
 
-  return res.status(200).json(demands);
+  return response.status(200).json(demands);
 };
 
-const getFile = async (req, res) => {
-  const { idFile } = req.params;
+const getFile = async (request, response) => {
+  const { idFile } = request.params;
   try {
     const fileObject = await File.findOne({ _id: idFile });
     let pathFile = pathR.resolve(__dirname, '..', '..', 'files', 'uploads', `${fileObject.path}`);
@@ -1010,17 +1005,17 @@ const getFile = async (req, res) => {
       pathFile = pathR.resolve(__dirname, '..', '..', 'files', 'Error', 'PDF_NOT_FOUND.pdf');
     }
     const file = fs.createReadStream(pathFile);
-    res.contentType('application/pdf');
-    return file.pipe(res);
+    response.contentType('application/pdf');
+    return file.pipe(response);
   } catch (err) {
-    return res.status(400).json({ err: 'Failed to get file.' });
+    return response.status(400).json({ err: 'Failed to get file.' });
   }
 };
 
-const uploadFile = async (req, res) => {
+const uploadFile = async (request, response) => {
   try {
 
-    const { id } = req.params;
+    const { id } = request.params;
     const {
       userName,
       userSector,
@@ -1028,11 +1023,11 @@ const uploadFile = async (req, res) => {
       description,
       important,
       visibility,
-    } = req.body;
+    } = request.body;
 
-    const name = req.file.originalname;
-    const { size } = req.file;
-    const path = req.file.filename;
+    const name = request.file.originalname;
+    const { size } = request.file;
+    const path = request.file.filename;
     const newFile = await File.create({
       name,
       path,
@@ -1048,11 +1043,11 @@ const uploadFile = async (req, res) => {
     
     const MAX_SIZE_5_MEGABYTES = 5 * 1024 * 1024;
     if (size >= MAX_SIZE_5_MEGABYTES) {
-      return res.status(400).json({ err: "File bigger then 5MB." })
+      return response.status(400).json({ err: "File bigger then 5MB." })
     }
 
     if (validFields.length) {
-      return res.status(400).json({ status: validFields });
+      return response.status(400).json({ status: validFields });
     }
 
     const demandFound = await Demand.findOne({ _id: id });
@@ -1072,9 +1067,9 @@ const uploadFile = async (req, res) => {
     await Demand.findOneAndUpdate({ _id: id }, {
       updateList: demandFound.updateList,
     }, { new: true }, (user) => user);
-    return res.json(newFile);
+    return response.json(newFile);
   } catch {
-    return res.status(400).json({ err: 'Failed to save file.' });
+    return response.status(400).json({ err: 'Failed to save file.' });
   }
 };
 
